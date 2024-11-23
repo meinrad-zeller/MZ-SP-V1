@@ -5,10 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Sheets Map</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5m3uw8J7A7jLrjjNBk72Zf5172ZsRCQw"></script>
+    <style>
+        #gpsButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        #gpsButton:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
 </head>
 <body>
     <h1>Google Sheets Adressen auf Karte</h1>
     <div id="map" style="width: 100%; height: 500px;"></div>
+    <button id="gpsButton">GPS Position</button>
     <div id="info" style="margin-top: 20px; font-size: 16px;">
         <p>Maximale Entfernung: <span id="max-distance">Berechne...</span></p>
         <p>Gesamte Wegstrecke: <span id="total-distance">Berechne...</span></p>
@@ -26,6 +44,8 @@
         let locations = []; // Geocodierte Standorte
         let map;
         let bounds;
+        let gpsMarker;
+
 
         function initMap() {
             map = new google.maps.Map(document.getElementById("map"), {
@@ -33,6 +53,51 @@
                 zoom: 6,
             });
             bounds = new google.maps.LatLngBounds();
+
+            // Eventlistener für GPS-Button
+            document.getElementById("gpsButton").addEventListener("click", showCurrentLocation);
+
+        }
+
+        function showCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+
+                        // Marker für GPS-Position setzen oder aktualisieren
+                        if (!gpsMarker) {
+                            gpsMarker = new google.maps.Marker({
+                                position: userLocation,
+                                map: map,
+                                title: "Deine Position",
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 10,
+                                    fillColor: "#4285F4",
+                                    fillOpacity: 0.8,
+                                    strokeWeight: 2,
+                                    strokeColor: "#ffffff",
+                                },
+                            });
+                        } else {
+                            gpsMarker.setPosition(userLocation);
+                        }
+
+                        // Karte zentrieren
+                        map.setCenter(userLocation);
+                        map.setZoom(14); // Zoom auf die aktuelle Position
+                    },
+                    (error) => {
+                        alert("Fehler beim Abrufen der Position: " + error.message);
+                    }
+                );
+            } else {
+                alert("Geolocation wird von diesem Gerät nicht unterstützt.");
+            }
         }
 
         async function fetchSheetData() {
