@@ -3,29 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Sheets Map</title>
+    <title>Google Maps mit Buttons</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5m3uw8J7A7jLrjjNBk72Zf5172ZsRCQw"></script>
     <style>
-        #gpsButton {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 10px;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        /* Karte und allgemeine Layout-Stile */
+        #map {
+            width: 100%;
+            height: 500px;
         }
-        #gpsButton:hover {
+
+        /* Container für Buttons */
+        #buttonContainer {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center; /* Zentriert die Buttons */
+            gap: 10px; /* Abstand zwischen Buttons */
+        }
+
+        /* Stil für die Buttons */
+        .actionButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
             background-color: #f0f0f0;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .actionButton:hover {
+            background-color: #e0e0e0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
 <body>
-    <h1>Google Sheets Adressen auf Karte</h1>
-    <div id="map" style="width: 100%; height: 500px;"></div>
+    <h1>Google Maps mit Buttons</h1>
+    <div id="map"></div>
+    <div id="buttonContainer">
+        <button class="actionButton" id="btnKI">KI</button>
+        <button class="actionButton" id="btnPOS">POS</button>
+        <button class="actionButton" id="btnWVL">WVL</button>
+        <button class="actionButton" id="btnX">X</button>
+        <button class="actionButton" id="btnAuftrag">Auftrag</button>
+    </div>
     <button id="gpsButton">GPS Position</button>
     <div id="info" style="margin-top: 20px; font-size: 16px;">
         <p>Maximale Entfernung: <span id="max-distance">Berechne...</span></p>
@@ -58,6 +80,27 @@
             document.getElementById("gpsButton").addEventListener("click", showCurrentLocation);
 
         }
+
+        // Event-Handler für Buttons
+        document.getElementById("btnKI").addEventListener("click", () => {
+            alert("KI-Button wurde geklickt");
+        });
+
+        document.getElementById("btnPOS").addEventListener("click", () => {
+            alert("POS-Button wurde geklickt");
+        });
+
+        document.getElementById("btnWVL").addEventListener("click", () => {
+            alert("WVL-Button wurde geklickt");
+        });
+
+        document.getElementById("btnX").addEventListener("click", () => {
+            alert("X-Button wurde geklickt");
+        });
+
+        document.getElementById("btnAuftrag").addEventListener("click", () => {
+            alert("Auftrag-Button wurde geklickt");
+        });
 
         function showCurrentLocation() {
             if (navigator.geolocation) {
