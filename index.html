@@ -188,7 +188,7 @@
                 position: location,
                 map: map,
                 title: title,
-                icon: `http://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
+                icon: `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
             });
             bounds.extend(location);
         }
@@ -196,16 +196,26 @@
         function geocodeAddress(address) {
             return new Promise((resolve, reject) => {
                 const geocoder = new google.maps.Geocoder();
-                geocoder.geocode({ address: address }, (results, status) => {
-                    if (status === "OK") {
-                        resolve(results[0].geometry.location);
-                    } else {
-                        console.error("Geocoding fehlgeschlagen für Adresse:", address, "Status:", status);
-                        resolve(null);
+                geocoder.geocode(
+                    {
+                        address: address,
+                        componentRestrictions: {
+                            locality: "Nordhastedt",
+                            country: "DE",
+                        },
+                    },
+                    (results, status) => {
+                        if (status === "OK") {
+                            resolve(results[0].geometry.location);
+                        } else {
+                            console.error("Geocoding fehlgeschlagen für Adresse:", address, "Status:", status);
+                            resolve(null);
+                        }
                     }
-                });
+                );
             });
         }
+
 
         function calculateDistances() {
             if (locations.length < 2) {
