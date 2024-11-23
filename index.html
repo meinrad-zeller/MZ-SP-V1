@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon" href="path/to/icon.png">
     <title>Google Maps mit Buttons</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5m3uw8J7A7jLrjjNBk72Zf5172ZsRCQw"></script>
     <style>
@@ -67,6 +68,7 @@
         let map;
         let bounds;
         let gpsMarker;
+        let watchId;
 
 
         function initMap() {
@@ -77,8 +79,7 @@
             bounds = new google.maps.LatLngBounds();
 
             // Eventlistener für GPS-Button
-            document.getElementById("gpsButton").addEventListener("click", showCurrentLocation);
-
+            document.getElementById("gpsButton").addEventListener("click", toggleLocationTracking);
         }
 
         // Event-Handler für Buttons
@@ -101,47 +102,6 @@
         document.getElementById("btnAuftrag").addEventListener("click", () => {
             alert("Auftrag-Button wurde geklickt");
         });
-
-        function showCurrentLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                        };
-
-                        // Marker für GPS-Position setzen oder aktualisieren
-                        if (!gpsMarker) {
-                            gpsMarker = new google.maps.Marker({
-                                position: userLocation,
-                                map: map,
-                                title: "Deine Position",
-                                icon: {
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    scale: 10,
-                                    fillColor: "#4285F4",
-                                    fillOpacity: 0.8,
-                                    strokeWeight: 2,
-                                    strokeColor: "#ffffff",
-                                },
-                            });
-                        } else {
-                            gpsMarker.setPosition(userLocation);
-                        }
-
-                        // Karte zentrieren
-                        map.setCenter(userLocation);
-                        map.setZoom(14); // Zoom auf die aktuelle Position
-                    },
-                    (error) => {
-                        alert("Fehler beim Abrufen der Position: " + error.message);
-                    }
-                );
-            } else {
-                alert("Geolocation wird von diesem Gerät nicht unterstützt.");
-            }
-        }
 
         async function fetchSheetData() {
             try {
@@ -268,6 +228,61 @@
         function toRad(value) {
             return (value * Math.PI) / 180;
         }
+
+    function toggleLocationTracking() {
+            if (!navigator.geolocation) {
+                alert("Geolocation wird von diesem Gerät nicht unterstützt.");
+                return;
+            }
+
+            if (watchId) {
+                // Tracking stoppen
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                alert("Standort-Tracking gestoppt.");
+            } else {
+                // Tracking starten
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+
+                        // Marker für GPS-Position setzen oder aktualisieren
+                        if (!gpsMarker) {
+                            gpsMarker = new google.maps.Marker({
+                                position: userLocation,
+                                map: map,
+                                title: "Deine Position",
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 10,
+                                    fillColor: "#4285F4",
+                                    fillOpacity: 0.8,
+                                    strokeWeight: 2,
+                                    strokeColor: "#ffffff",
+                                },
+                            });
+                        } else {
+                            gpsMarker.setPosition(userLocation);
+                        }
+
+                        // Karte zentrieren
+                        map.setCenter(userLocation);
+                    },
+                    (error) => {
+                        alert("Fehler beim Abrufen der Position: " + error.message);
+                    },
+                    {
+                        enableHighAccuracy: true, // Präzisere Positionierung (mehr Akkuverbrauch)
+                        maximumAge: 0, // Keine gecachten Positionen
+                        timeout: 5000, // Timeout, falls keine Position gefunden wird
+                    }
+                );
+                alert("Standort-Tracking gestartet.");
+            }
+        }        
 
         window.onload = () => {
             initMap();
