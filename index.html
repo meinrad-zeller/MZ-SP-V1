@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Map</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD5m3uw8J7A7jLrjjNBk72Zf5172ZsRCQw"></script>
+</head>
+<body>
+    <h1>Google Sheets Adressen auf Karte</h1>
+    <div id="map" style="width: 100%; height: 500px;"></div>
+    <div id="info" style="margin-top: 20px; font-size: 16px;">
+        <p>Maximale Entfernung: <span id="max-distance">Berechne...</span></p>
+        <p>Gesamte Wegstrecke: <span id="total-distance">Berechne...</span></p>
+    </div>
+
+    <script>
+        //1H9IOqE4BNOONII6NmbLoYMmzOuxOYN1d5aNerxRohI4
+        //1RzzyCy36suMxbeaEj_dEM86NjnkIGcITlBcwRmhn2yg
+        const SHEET_ID = "1H9IOqE4BNOONII6NmbLoYMmzOuxOYN1d5aNerxRohI4";
+        const API_KEY = "AIzaSyD5m3uw8J7A7jLrjjNBk72Zf5172ZsRCQw";
+        const SHEET_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/A2:H?key=${API_KEY}`;
+        
+        
+        let addressData = [];
+        let locations = []; // Geocodierte Standorte
+        let map;
+        let bounds;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 51.1657, lng: 10.4515 },
+                zoom: 6,
+            });
+            bounds = new google.maps.LatLngBounds();
+        }
+
+        async function fetchSheetData() {
+            try {
+                const response = await fetch(SHEET_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP Fehler: ${response.status}`);
+                }
+                const data = await response.json();
+                if (!data.values || data.values.length === 0) {
+                    console.error("Keine Daten im Sheet gefunden.");
+                    return;
+                }
+                addressData = data.values;
+                await processAddresses();
+                calculateDistances();
+            } catch (error) {
+                console.error("Fehler beim Abrufen der Daten:", error);
+            }
+        }
+
+        async function processAddresses() {
+            for (const row of addressData) {
+                const [status, plz, ort, strasse, hausnr, hsnrZusatz, hausArt, anzWE] = row;
+                const address = `${strasse} ${hausnr}${hsnrZusatz ? " " + hsnrZusatz : ""}, ${plz} ${ort}, Deutschland`;
+                var color = "red";
+
+                if (anzWE > 2)
+                    color = "purple";
+
+                const coordinates = await geocodeAddress(address);
+                if (coordinates) {
+                    locations.push(coordinates);
+                    addMarker(coordinates, address, color);
+                }
+            }
+
+            if (locations.length > 0) {
+                map.fitBounds(bounds);
+            }
+        }
+
+        function addMarker(location, title, color) {
+            new google.maps.Marker({
+                position: location,
+                map: map,
+                title: title,
+                icon: `http://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
+            });
+            bounds.extend(location);
+        }
+
+        function geocodeAddress(address) {
+            return new Promise((resolve, reject) => {
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: address }, (results, status) => {
+                    if (status === "OK") {
+                        resolve(results[0].geometry.location);
+                    } else {
+                        console.error("Geocoding fehlgeschlagen für Adresse:", address, "Status:", status);
+                        resolve(null);
+                    }
+                });
+            });
+        }
+
+        function calculateDistances() {
+            if (locations.length < 2) {
+                document.getElementById("max-distance").textContent = "Nicht genug Adressen für Berechnung.";
+                document.getElementById("total-distance").textContent = "Nicht genug Adressen für Berechnung.";
+                return;
+            }
+
+            let maxDistance = 0;
+            let totalDistance = 0;
+
+            // Berechnung der maximalen Entfernung (Luftlinie)
+            for (let i = 0; i < locations.length; i++) {
+                for (let j = i + 1; j < locations.length; j++) {
+                    const dist = haversineDistance(locations[i], locations[j]);
+                    maxDistance = Math.max(maxDistance, dist);
+                }
+            }
+
+            // Berechnung der gesamten Wegstrecke
+            for (let i = 0; i < locations.length - 1; i++) {
+                totalDistance += haversineDistance(locations[i], locations[i + 1]);
+            }
+
+            document.getElementById("max-distance").textContent = `${maxDistance.toFixed(2)} km`;
+            document.getElementById("total-distance").textContent = `${totalDistance.toFixed(2)} km`;
+        }
+
+        function haversineDistance(loc1, loc2) {
+            const R = 6371; // Radius der Erde in km
+            const lat1 = loc1.lat();
+            const lon1 = loc1.lng();
+            const lat2 = loc2.lat();
+            const lon2 = loc2.lng();
+
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) *
+                    Math.cos(toRad(lat2)) *
+                    Math.sin(dLon / 2) *
+                    Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // Entfernung in km
+        }
+
+        function toRad(value) {
+            return (value * Math.PI) / 180;
+        }
+
+        window.onload = () => {
+            initMap();
+            fetchSheetData();
+        };
+    </script>
+</body>
+</html>
