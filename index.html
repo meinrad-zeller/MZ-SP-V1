@@ -153,19 +153,42 @@
             bounds.extend(location);
         }
 
-        function geocodeAddress(address) {
+        function geocodeAddress(address, plz, ort) { 
             return new Promise((resolve, reject) => {
                 const geocoder = new google.maps.Geocoder();
                 geocoder.geocode(
                     {
                         address: address,
                         componentRestrictions: {
-                            locality: "Nordhastedt",
+                            locality: ort,
                             country: "DE",
                         },
                     },
                     (results, status) => {
                         if (status === "OK") {
+                            if (results.length > 1) {
+                                console.log(`Mehrere Ergebnisse für die Adresse "${address}" gefunden:`, results);
+
+                                // Überprüfung aller Ergebnisse auf Übereinstimmung von PLZ und Ort
+                                for (const result of results) {
+                                    const addressComponents = result.address_components;
+                                    const hasMatchingPlz = addressComponents.some(
+                                        (comp) => comp.types.includes("postal_code") && comp.long_name === plz
+                                    );
+                                    const hasMatchingOrt = addressComponents.some(
+                                        (comp) => comp.types.includes("locality") && comp.long_name === ort
+                                    );
+
+                                    if (hasMatchingPlz && hasMatchingOrt) {
+                                        console.log("Passender Eintrag gefunden:", result);
+                                        resolve(result.geometry.location);
+                                        return;
+                                    }
+                                }
+                                console.warn("Kein exakter Eintrag mit passender PLZ und Ort gefunden. Verwende den ersten Eintrag.");
+                            }
+
+                            // Wenn nur ein Ergebnis vorliegt oder keine Übereinstimmung gefunden wurde, verwende das erste Ergebnis
                             resolve(results[0].geometry.location);
                         } else {
                             console.error("Geocoding fehlgeschlagen für Adresse:", address, "Status:", status);
